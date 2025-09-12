@@ -3,16 +3,16 @@
 main.main:
 # start *ast.BinaryExpr
 # start *ast.BasicLit
-  movq $40, %rax
+  movq $44, %rax
   pushq %rax
 # end *ast.BasicLit
 # start *ast.BasicLit
-  movq $2, %rax
+  movq $3, %rax
   pushq %rax
 # end *ast.BasicLit
-  popq %rax
-  popq %rdi
-  addq %rdi, %rax
+  popq %rdi # right
+  popq %rax # left
+  subq %rdi, %rax
   pushq %rax
 # end *ast.BinaryExpr
   popq %rax
