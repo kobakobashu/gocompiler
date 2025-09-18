@@ -1,6 +1,7 @@
 .text
 .global main.main
 main.main:
+# start *ast.CallExpr
 # start *ast.BinaryExpr
 # start *ast.BinaryExpr
 # start *ast.BasicLit
@@ -37,7 +38,6 @@ main.main:
   addq %rdi, %rax
   pushq %rax
 # end *ast.BinaryExpr
-  popq %rax
-  pushq %rax
-  callq _os_exit
+  callq _os_exitt
+# end *ast.CallExpr
   ret

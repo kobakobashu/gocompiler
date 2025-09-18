@@ -43,13 +43,28 @@ func emitExpr(expr ast.Expr) {
 			panic(fmt.Sprintf("Unexpected binary operator %s", e.Op))
 		}
 		fmt.Printf("# end %T\n", e)
+	case *ast.CallExpr:
+		fmt.Printf("# start %T\n", e)
+		if len(e.Args) != 1 {
+			panic("Only single-argument calls are supported")
+		}
+		// Evaluate the single argument; leaves result on stack (top)
+		emitExpr(e.Args[0])
+		// Resolve callee symbol
+		switch fn := e.Fun.(type) {
+		case *ast.Ident:
+			fmt.Printf("  callq %s\n", fn.Name)
+		default:
+			panic(fmt.Sprintf("Unsupported callee type %T", e.Fun))
+		}
+		fmt.Printf("# end %T\n", e)
 	default:
 		panic(fmt.Sprintf("Unexpected expr type %T", expr))
 	}
 }
 
 func main() {
-	source := "21*1 + (7*3)"
+	source := "_os_exit(21*1 + (7*3))"
 	expr, err := parser.ParseExpr(source)
 	if err != nil {
 		panic(err)
@@ -58,8 +73,5 @@ func main() {
 	fmt.Printf(".global main.main\n")
 	fmt.Printf("main.main:\n")
 	emitExpr(expr)
-	fmt.Printf("  popq %%rax\n")
-	fmt.Printf("  pushq %%rax\n")
-	fmt.Printf("  callq _os_exit\n")
 	fmt.Printf("  ret\n")
 }
