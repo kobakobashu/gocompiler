@@ -9,6 +9,10 @@ import (
 
 func emitExpr(expr ast.Expr) {
 	switch e := expr.(type) {
+	case *ast.ParenExpr:
+		fmt.Printf("# start %T\n", e)
+		emitExpr(e.X)
+		fmt.Printf("# end %T\n", e)
 	case *ast.BasicLit:
 		fmt.Printf("# start %T\n", e)
 		val := e.Value
@@ -45,7 +49,7 @@ func emitExpr(expr ast.Expr) {
 }
 
 func main() {
-	source := "14 * 3"
+	source := "21*1 + (7*3)"
 	expr, err := parser.ParseExpr(source)
 	if err != nil {
 		panic(err)
