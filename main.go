@@ -54,6 +54,13 @@ func emitExpr(expr ast.Expr) {
 		switch fn := e.Fun.(type) {
 		case *ast.Ident:
 			fmt.Printf("  callq %s\n", fn.Name)
+		case *ast.SelectorExpr:
+			if pkg, ok := fn.X.(*ast.Ident); ok {
+				symbol := pkg.Name + "." + fn.Sel.Name
+				fmt.Printf("  callq %s\n", symbol)
+			} else {
+				panic(fmt.Sprintf("Unsupported selector base type %T", fn.X))
+			}
 		default:
 			panic(fmt.Sprintf("Unsupported callee type %T", e.Fun))
 		}
@@ -64,7 +71,7 @@ func emitExpr(expr ast.Expr) {
 }
 
 func main() {
-	source := "_os_exit(21*1 + (7*3))"
+	source := "os.Exit(21*1 + (7*3))"
 	expr, err := parser.ParseExpr(source)
 	if err != nil {
 		panic(err)

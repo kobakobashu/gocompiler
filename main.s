@@ -38,6 +38,6 @@ main.main:
   addq %rdi, %rax
   pushq %rax
 # end *ast.BinaryExpr
-  callq _os_exitt
+  callq os.Exit
 # end *ast.CallExpr
   ret
