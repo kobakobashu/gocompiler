@@ -9,7 +9,7 @@
 a.out: runtime.s main.s
 	cc -Wl,-e,_start -o a.out runtime.s main.s
 
-main.s:
+main.s: main.go t/source.go
 	go run main.go > main.s
 
 # Build and run tests
