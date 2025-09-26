@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/token"
 	"strconv"
+	"strings"
 )
 
 func emitExpr(expr ast.Expr) {
@@ -16,10 +17,20 @@ func emitExpr(expr ast.Expr) {
 		fmt.Printf("  # end %T\n", e)
 	case *ast.BasicLit:
 		fmt.Printf("  # start %T\n", e)
-		val := e.Value
-		ival, _ := strconv.Atoi(val)
-		fmt.Printf("  movq $%d, %%rax\n", ival)
-		fmt.Printf("  pushq %%rax\n")
+		fmt.Printf("  # kind=%s\n", e.Kind)
+		if e.Kind.String() == "INT" {
+			val := e.Value
+			ival, _ := strconv.Atoi(val)
+			fmt.Printf("  movq $%d, %%rax\n", ival)
+			fmt.Printf("  pushq %%rax\n")
+		} else if e.Kind.String() == "STRING" {
+			splitted := strings.Split(e.Value, ":")
+			fmt.Printf("  leaq %s, %%rax\n", splitted[0]) // str.ptr
+			fmt.Printf("  pushq %%rax\n")
+			fmt.Printf("  pushq $%s\n", splitted[1]) // str.len
+		} else {
+			panic("Unexpected literal kind:" + e.Kind.String())
+		}
 		fmt.Printf("  # end %T\n", e)
 	case *ast.BinaryExpr:
 		fmt.Printf("  # start %T\n", e)
@@ -51,20 +62,28 @@ func emitExpr(expr ast.Expr) {
 		}
 		// Evaluate the single argument; leaves result on stack (top)
 		fmt.Printf("  # e.Args[0] type: %T\n", e.Args[0])
-		emitExpr(e.Args[0])
 		// Resolve callee symbol
 		switch fn := e.Fun.(type) {
 		case *ast.Ident:
-			fmt.Printf("  callq %s\n", fn.Name)
+			if fn.Name == "print" {
+				// builtin print
+				emitExpr(e.Args[0]) // push ptr, push len
+				symbol := fmt.Sprintf("runtime.printstring")
+				fmt.Printf("  call %s\n", symbol)
+				fmt.Printf("  addq $8, %%rsp\n")
+			} else {
+				panic("Unexpected fn.Name:" + fn.Name)
+			}
 		case *ast.SelectorExpr:
 			if pkg, ok := fn.X.(*ast.Ident); ok {
+				emitExpr(e.Args[0])
 				symbol := pkg.Name + "." + fn.Sel.Name
 				fmt.Printf("  callq %s\n", symbol)
 			} else {
 				panic(fmt.Sprintf("Unsupported selector base type %T", fn.X))
 			}
 		default:
-			panic(fmt.Sprintf("Unsupported callee type %T", e.Fun))
+			panic(fmt.Sprintf("Unexpected expr type %T", e.Fun))
 		}
 		fmt.Printf("  # end %T\n", e)
 	default:
@@ -88,7 +107,65 @@ func emitFuncDecl(pkgPrefix string, funcDecl *ast.FuncDecl) {
 	fmt.Printf("  ret\n")
 }
 
+var stringLiterals []string
+var stringIndex int
+
+func walkExpr(expr ast.Expr) {
+	switch e := expr.(type) {
+	case *ast.CallExpr:
+		for _, arg := range e.Args {
+			walkExpr(arg)
+		}
+	case *ast.ParenExpr:
+		walkExpr(e.X)
+	case *ast.BasicLit:
+		if e.Kind.String() == "INT" {
+		} else if e.Kind.String() == "STRING" {
+			rawStringLiteal := e.Value
+			stringLiterals = append(stringLiterals, rawStringLiteal)
+			e.Value = fmt.Sprintf(".S%d:%d", stringIndex, len(rawStringLiteal)-2-1) // \n is counted as 2 ?
+			stringIndex++
+		} else {
+			panic("Unexpected literal kind:" + e.Kind.String())
+		}
+	case *ast.BinaryExpr:
+		walkExpr(e.X) // left
+		walkExpr(e.Y) // right
+	default:
+		panic(fmt.Sprintf("Unexpected expr type %T", expr))
+	}
+}
+
+func semanticAnalyze(f *ast.File) {
+	for _, decl := range f.Decls {
+		switch decl.(type) {
+		case *ast.GenDecl:
+			continue
+		case *ast.FuncDecl:
+			funcDecl := decl.(*ast.FuncDecl)
+			for _, stmt := range funcDecl.Body.List {
+				switch stmt.(type) {
+				case *ast.ExprStmt:
+					expr := stmt.(*ast.ExprStmt).X
+					walkExpr(expr)
+				default:
+					panic("Unexpected stmt type")
+				}
+			}
+		default:
+			panic("unexpected decl type")
+		}
+	}
+}
+
 func generateCode(f *ast.File) {
+	fmt.Printf(".data\n")
+	for i, sl := range stringLiterals {
+		fmt.Printf(".S%d:\n", i)
+		fmt.Printf("  .string %s\n", sl)
+	}
+	fmt.Printf("\n")
+
 	for _, decl := range f.Decls {
 		switch decl.(type) {
 		case *ast.GenDecl:
@@ -109,5 +186,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	semanticAnalyze(f)
 	generateCode(f)
 }
