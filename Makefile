@@ -1,20 +1,18 @@
-.PHONY: test clean
+# Run this on Linux
 
-# Build a.out from runtime.s
-#a.out: runtime.s main.s
-#	cc -o a.out runtime.s main.s
-# Use a custom entry symbol for macOS Mach-O
-# See: ld -e entry
-# Build a.out from runtime.s and main.s with entry _start
-a.out: runtime.s main.s
-	cc -Wl,-e,_start -o a.out runtime.s main.s
+all: a.out
 
 main.s: main.go t/source.go
 	go run main.go > main.s
 
-# Build and run tests
+a.o: main.s runtime.s
+	as -o a.o main.s runtime.s
+
+a.out: a.o
+	ld -o a.out a.o
+
 test: a.out
 	./test.sh
 
 clean:
-	rm -f a.out main.s
+	rm -f a.o a.out main.s

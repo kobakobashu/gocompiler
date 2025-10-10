@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -u
 ./a.out 1>/tmp/actual.1 2> /tmp/actual.2
 exit_status=$?

@@ -1,41 +1,32 @@
 .data
 .S0:
-  .ascii "hello world\n"
-.S0_end:
+  .string "hello world\n"
 .S1:
-  .ascii "to stderr\n"
-.S1_end:
+  .string "to stderr\n"
 
 # funcDecl main
 .text
-.global main.main
 main.main:
-  # start *ast.CallExpr
-  # e.Args[0] type: *ast.BasicLit
+  # funcall=*ast.Ident
   # start *ast.BasicLit
   # kind=STRING
-  leaq .S0(%rip), %rax
-  pushq $.S0_end-.S0
+  leaq .S0, %rax
   pushq %rax
+  pushq $12
   # end *ast.BasicLit
-  callq runtime.printstring
-  addq $16, %rsp
-  # end *ast.CallExpr
-  # start *ast.CallExpr
-  # e.Args[0] type: *ast.BasicLit
+  call runtime.printstring
+  addq $8, %rsp
+  # funcall=*ast.Ident
   # start *ast.BasicLit
   # kind=STRING
-  leaq .S1(%rip), %rax
-  pushq $.S1_end-.S1
+  leaq .S1, %rax
   pushq %rax
+  pushq $10
   # end *ast.BasicLit
-  callq runtime.printstring
-  addq $16, %rsp
-  # end *ast.CallExpr
-  # start *ast.CallExpr
-  # e.Args[0] type: *ast.BinaryExpr
+  call runtime.printstring
+  addq $8, %rsp
+  # funcall=*ast.SelectorExpr
   # start *ast.BinaryExpr
-  # start *ast.ParenExpr
   # start *ast.BinaryExpr
   # start *ast.BasicLit
   # kind=INT
@@ -52,7 +43,6 @@ main.main:
   addq %rdi, %rax
   pushq %rax
   # end *ast.BinaryExpr
-  # end *ast.ParenExpr
   # start *ast.BasicLit
   # kind=INT
   movq $2, %rax
@@ -63,6 +53,5 @@ main.main:
   imulq %rdi, %rax
   pushq %rax
   # end *ast.BinaryExpr
-  callq os.Exit
-  # end *ast.CallExpr
+  call os.Exit
   ret
