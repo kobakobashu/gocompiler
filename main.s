@@ -7,6 +7,8 @@
 # funcDecl main
 .text
 main.main:
+push %rbp
+movq %rsp, %rbp
   # funcall=*ast.Ident
   # start *ast.BasicLit
   # kind=STRING
@@ -14,8 +16,7 @@ main.main:
   pushq %rax
   pushq $12
   # end *ast.BasicLit
-  call runtime.printstring
-  addq $8, %rsp
+  callq runtime.printstring
   # funcall=*ast.Ident
   # start *ast.BasicLit
   # kind=STRING
@@ -23,8 +24,7 @@ main.main:
   pushq %rax
   pushq $10
   # end *ast.BasicLit
-  call runtime.printstring
-  addq $8, %rsp
+  callq runtime.printstring
   # funcall=*ast.SelectorExpr
   # start *ast.BinaryExpr
   # start *ast.BinaryExpr
@@ -53,5 +53,6 @@ main.main:
   imulq %rdi, %rax
   pushq %rax
   # end *ast.BinaryExpr
-  call os.Exit
+  callq os.Exit
+  leave
   ret
