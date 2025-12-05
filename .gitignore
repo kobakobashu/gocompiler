@@ -33,5 +33,6 @@ go.work.sum
 
 runtime.o
 main.o
-a.out
-a.o
+/a.out
+/a.o
+/a.s
