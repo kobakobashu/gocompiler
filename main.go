@@ -162,7 +162,7 @@ func emitExpr(expr ast.Expr) {
 				symbol := "main." + fn.Name
 				fmt.Printf("  callq %s\n", symbol)
 				fmt.Printf("  addq $%d, %%rsp # revert\n", n*8)
-				fmt.Printf("  push %%rax\n")
+				fmt.Printf("  pushq %%rax\n")
 			}
 		case *ast.SelectorExpr:
 			emitExpr(e.Args[0])
@@ -252,7 +252,7 @@ func emitFuncDecl(pkgPrefix string, fnc *Func) {
 			} else {
 				fmt.Printf("  popq %%rdi # rhs evaluated\n")
 				fmt.Printf("  popq %%rax # lhs addr\n")
-				fmt.Printf("  movq %%rdi, (%%rax)")
+				fmt.Printf("  movq %%rdi, (%%rax)\n")
 			}
 		case *ast.ReturnStmt:
 			emitExpr(s.Results[0])
